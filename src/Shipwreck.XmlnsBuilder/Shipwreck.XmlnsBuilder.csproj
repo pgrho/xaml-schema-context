@@ -3,7 +3,7 @@
   <PropertyGroup>
     <TargetFrameworks>net45;netcoreapp3.1</TargetFrameworks>
     <UseWPF>true</UseWPF>
-    <Version>0.0.1</Version>
+    <Version>0.0.2</Version>
     <Authors>shipwreck.jp</Authors>
     <Copyright>Copyright © 2021 shipwreck.jp</Copyright>
     <LangVersion>9.0</LangVersion>

@@ -2,6 +2,7 @@
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using System.Xaml;
 using System.Xaml.Schema;
 
@@ -40,7 +41,7 @@ namespace Shipwreck.XmlnsBuilder
                     var nss = ((AppendableXamlSchemaContext)SchemaContext)._Namespaces;
                     var asm = UnderlyingType.Assembly.GetName().Name;
                     var ns = UnderlyingType.Namespace;
-                    _CustomNamespaces = nss.Where(e => e.Value.asm == asm && e.Value.ns == ns).Select(e => e.Key).ToArray();
+                    _CustomNamespaces = nss.Where(e => e.asm == asm && e.ns == ns).Select(e => e.xmlns).ToArray();
                 }
 
                 if (_CustomNamespaces.Any())
@@ -52,8 +53,11 @@ namespace Shipwreck.XmlnsBuilder
             }
         }
 
-        private Dictionary<string, (string asm, string ns)> _Namespaces;
+        private List<(string xmlns, string asm, string ns)> _Namespaces;
         private Dictionary<string, string> _Prefixes;
+
+        public AppendableXamlSchemaContext AddNamespaces(string xmlns, Assembly @assembly)
+            => AddNamespaces(xmlns, @assembly.GetExportedTypes().GroupBy(e => e.Namespace).Select(e => e.First()));
 
         public AppendableXamlSchemaContext AddNamespaces(string xmlns, IEnumerable<Type> namespaceTypes)
         {
@@ -69,7 +73,7 @@ namespace Shipwreck.XmlnsBuilder
 
         public AppendableXamlSchemaContext AddNamespace(string xmlns, string clrNamespace, string assemblyName)
         {
-            (_Namespaces ??= new Dictionary<string, (string asm, string ns)>())[xmlns] = (assemblyName, clrNamespace);
+            (_Namespaces ??= new List<(string xmlns, string asm, string ns)>()).Add((xmlns, assemblyName, clrNamespace));
             return this;
         }
 
@@ -80,7 +84,7 @@ namespace Shipwreck.XmlnsBuilder
         }
 
         public override IEnumerable<string> GetAllXamlNamespaces()
-            => _Namespaces?.Count > 0 ? base.GetAllXamlNamespaces().Concat(_Namespaces.Keys).Distinct() : base.GetAllXamlNamespaces();
+            => _Namespaces?.Count > 0 ? base.GetAllXamlNamespaces().Concat(_Namespaces.Select(e => e.xmlns)).Distinct() : base.GetAllXamlNamespaces();
 
         public override ICollection<XamlType> GetAllXamlTypes(string xamlNamespace)
             => base.GetAllXamlTypes(xamlNamespace);
@@ -96,14 +100,20 @@ namespace Shipwreck.XmlnsBuilder
 
         protected override XamlType GetXamlType(string xamlNamespace, string name, params XamlType[] typeArguments)
         {
-            if (_Namespaces != null && _Namespaces.TryGetValue(xamlNamespace, out var tp))
+            if (_Namespaces != null)
             {
-                var xt = base.GetXamlType($"clr-namespace:{tp.ns};assembly={tp.asm}", name, typeArguments)
-                        ?? base.GetXamlType($"clr-namespace:{tp.ns}", name, typeArguments);
-
-                if (xt != null)
+                foreach (var tp in _Namespaces)
                 {
-                    return xt;
+                    if (tp.xmlns == xamlNamespace)
+                    {
+                        var xt = base.GetXamlType($"clr-namespace:{tp.ns};assembly={tp.asm}", name, typeArguments)
+                                ?? base.GetXamlType($"clr-namespace:{tp.ns}", name, typeArguments);
+
+                        if (xt != null)
+                        {
+                            return xt;
+                        }
+                    }
                 }
             }
             return base.GetXamlType(xamlNamespace, name, typeArguments);
@@ -123,7 +133,7 @@ namespace Shipwreck.XmlnsBuilder
 
         public override bool TryGetCompatibleXamlNamespace(string xamlNamespace, out string compatibleNamespace)
         {
-            if (_Namespaces != null && _Namespaces.ContainsKey(xamlNamespace))
+            if (_Namespaces != null && _Namespaces.Any(e => e.xmlns == xamlNamespace))
             {
                 compatibleNamespace = xamlNamespace;
                 return true;
