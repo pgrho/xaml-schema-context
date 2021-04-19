@@ -1,0 +1,21 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.WindowsDesktop">
+
+  <PropertyGroup>
+    <TargetFrameworks>net45;netcoreapp3.1</TargetFrameworks>
+    <UseWPF>true</UseWPF>
+    <Version>0.0.1</Version>
+    <Authors>shipwreck.jp</Authors>
+    <Copyright>Copyright © 2021 shipwreck.jp</Copyright>
+    <LangVersion>9.0</LangVersion>
+    <IsDeterministic>true</IsDeterministic>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <PackageProjectUrl>https://github.com/pgrho/xaml-schema-context</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/pgrho/xaml-schema-context</RepositoryUrl>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <Description>XamlSchemaContext to inject xmlns</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.ValueTuple" Version="4.5.0" />
+  </ItemGroup>
+</Project>
